@@ -1,0 +1,51 @@
+{
+  "name": "papara-wrapper",
+  "version": "0.5.0",
+  "description": "Papara API wrapper for node",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "jest --config jestconfig.json",
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "tslint -p tsconfig.json",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koraykural/papara-wrapper.git"
+  },
+  "keywords": [
+    "papara",
+    "papara api"
+  ],
+  "author": "Koray Kural",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/koraykural/papara-wrapper/issues"
+  },
+  "homepage": "https://github.com/koraykural/papara-wrapper#readme",
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/jest": "^26.0.14",
+    "@types/uuid": "^8.3.0",
+    "dotenv": "^8.2.0",
+    "jest": "^26.4.2",
+    "prettier": "^2.1.2",
+    "ts-jest": "^26.4.1",
+    "tslint": "^6.1.3",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^4.0.3"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "dependencies": {
+    "axios": "^0.20.0",
+    "uuid": "^8.3.0"
+  }
+}
