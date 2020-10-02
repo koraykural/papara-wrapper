@@ -1,6 +1,6 @@
 {
   "name": "papara-wrapper",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Papara API wrapper for node",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
