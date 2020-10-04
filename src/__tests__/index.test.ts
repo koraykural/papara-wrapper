@@ -1,23 +1,20 @@
 import Papara from '../index';
-import { AxiosRequestConfig, AxiosResponse } from 'axios';
 
-jest.mock('axios', () => ({
+const axiosMock = {
   get: jest.fn(() => Promise.resolve({ data: { succeeded: true } })),
   post: jest.fn(() => Promise.resolve({ data: { succeeded: true } })),
   put: jest.fn(() => Promise.resolve({ data: { succeeded: true } })),
   interceptors: {
     request: {
-      use: (req: AxiosRequestConfig) => {
-        return req;
-      },
+      use: jest.fn(),
     },
     response: {
-      use: (res: AxiosResponse) => {
-        return res;
-      },
+      use: jest.fn(),
     },
   },
-}));
+};
+
+jest.mock('axios', () => ({ create: jest.fn(() => axiosMock) }));
 
 const papara = new Papara({ API_KEY: 'API_KEY' });
 

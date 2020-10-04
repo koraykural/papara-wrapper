@@ -1,5 +1,4 @@
-import axios from 'axios';
-// import * as AxiosLogger from 'axios-logger'; // For debugging
+import PaparaHttp from './papara-http';
 import { v4 as uuid } from 'uuid';
 import {
   PaparaResponse,
@@ -16,30 +15,14 @@ import {
 } from './interfaces';
 
 export default class Papara {
-  private get BASE_URL() {
-    if (this.testEnv) {
-      return 'https://merchant.test.api.papara.com';
-    } else {
-      return 'https://merchant-api.papara.com';
-    }
-  }
-  private testEnv: boolean;
+  private http: PaparaHttp;
 
   /**
    * Creates an instance of papara.
    * @param { API_KEY, testEnv = false }
    */
-  constructor({ API_KEY, testEnv = false }: { API_KEY: string; testEnv?: boolean }) {
-    this.testEnv = testEnv;
-
-    axios.interceptors.request.use((req) => {
-      req.headers.ApiKey = API_KEY;
-      return req;
-    });
-
-    // // Debug interceptors
-    // axios.interceptors.response.use((res) => AxiosLogger.responseLogger(res));
-    // axios.interceptors.request.use((req) => AxiosLogger.requestLogger(req));
+  constructor({ API_KEY, testEnv = false, debug = false }: { API_KEY: string; testEnv?: boolean; debug?: boolean }) {
+    this.http = new PaparaHttp({ API_KEY, testEnv, debug });
   }
 
   /**
@@ -47,10 +30,9 @@ export default class Papara {
    *
    * @returns  Account information.
    */
-  async account() {
+  async account(): Promise<PaparaResponse<AccountData>> {
     try {
-      const response = await axios.get<PaparaResponse<AccountData>>(`${this.BASE_URL}/account`);
-      return response.data;
+      return await this.http.get<AccountData>(`account`);
     } catch (err) {
       throw err;
     }
@@ -93,11 +75,7 @@ export default class Papara {
         page,
         pageSize,
       };
-      const response = await axios.post<PaparaResponse<AccountLedgersData>>(
-        `${this.BASE_URL}/account/ledgers`,
-        requestBody,
-      );
-      return response.data;
+      return await this.http.post<AccountLedgersData>(`/account/ledgers`, requestBody);
     } catch (err) {
       throw err;
     }
@@ -127,11 +105,7 @@ export default class Papara {
         startDate,
         endDate,
       };
-      const response = await axios.post<PaparaResponse<SettlementData>>(
-        `${this.BASE_URL}/account/settlement`,
-        requestBody,
-      );
-      return response.data;
+      return await this.http.post<SettlementData>(`/account/settlement`, requestBody);
     } catch (err) {
       throw err;
     }
@@ -163,7 +137,7 @@ export default class Papara {
     notificationUrl: string;
     redirectUrl: string;
     turkishNationalId?: string;
-  }) {
+  }): Promise<PaparaResponse<PaymentsData>> {
     const requestBody = {
       ...(referenceId !== undefined ? { referenceId } : { referenceId: uuid() }),
       ...(turkishNationalId !== undefined ? { turkishNationalId } : {}),
@@ -173,8 +147,7 @@ export default class Papara {
       redirectUrl,
     };
     try {
-      const response = await axios.post<PaparaResponse<PaymentsData>>(`${this.BASE_URL}/payments`, requestBody);
-      return response.data;
+      return await this.http.post<PaymentsData>(`/payments`, requestBody);
     } catch (err) {
       throw err;
     }
@@ -185,10 +158,9 @@ export default class Papara {
    * @param id
    * @returns
    */
-  async paymentsValidation(id: string) {
+  async paymentsValidation(id: string): Promise<PaparaResponse<PaymentsData>> {
     try {
-      const response = await axios.get<PaparaResponse<PaymentsData>>(`${this.BASE_URL}/payments?id=${id}`);
-      return response.data;
+      return await this.http.get<PaymentsData>(`/payments?id=${id}`);
     } catch (err) {
       throw err;
     }
@@ -199,10 +171,9 @@ export default class Papara {
    * @param id
    * @returns
    */
-  async paymentsRefund(id: string) {
+  async paymentsRefund(id: string): Promise<PaparaResponse<any>> {
     try {
-      const response = await axios.put<PaparaResponse<any>>(`${this.BASE_URL}/payments?id=${id}`);
-      return response.data;
+      return this.http.put<PaparaResponse<any>>(`/payments?id=${id}`);
     } catch (err) {
       throw err;
     }
@@ -211,10 +182,8 @@ export default class Papara {
   // This is a base method for validationBy... methods
   private async validation(method: 'accountNumber' | 'email' | 'phoneNumber' | 'tckn', credential: string | number) {
     try {
-      const response = await axios.get<PaparaResponse<ValidationData>>(
-        `${this.BASE_URL}/validation/${method}?${method}=${credential}`,
-      );
-      return response.data;
+      const response = await this.http.get<ValidationData>(`/validation/${method}?${method}=${credential}`);
+      return response;
     } catch (err) {
       throw err;
     }
@@ -225,7 +194,7 @@ export default class Papara {
    * @param accountNumber
    * @returns
    */
-  async validationByAccountNumber(accountNumber: number) {
+  async validationByAccountNumber(accountNumber: number): Promise<PaparaResponse<ValidationData>> {
     return this.validation('accountNumber', accountNumber);
   }
 
@@ -234,7 +203,7 @@ export default class Papara {
    * @param email
    * @returns
    */
-  async validationByEmail(email: string) {
+  async validationByEmail(email: string): Promise<PaparaResponse<ValidationData>> {
     return this.validation('email', email);
   }
 
@@ -243,7 +212,7 @@ export default class Papara {
    * @param phoneNumber
    * @returns
    */
-  async validationByPhoneNumber(phoneNumber: string) {
+  async validationByPhoneNumber(phoneNumber: string): Promise<PaparaResponse<ValidationData>> {
     return this.validation('phoneNumber', phoneNumber);
   }
 
@@ -252,7 +221,7 @@ export default class Papara {
    * @param tckn
    * @returns
    */
-  async validationByTCKN(tckn: string) {
+  async validationByTCKN(tckn: string): Promise<PaparaResponse<ValidationData>> {
     return this.validation('tckn', tckn);
   }
 
@@ -269,7 +238,7 @@ export default class Papara {
     amount: number;
     turkishNationalId?: string;
     massPaymentId?: string;
-  }) {
+  }): Promise<PaparaResponse<MasspaymentData>> {
     const subPath = method === 'accountNumber' ? '' : method === 'phoneNumber' ? 'phone' : 'email';
     const requestBody = {
       ...(turkishNationalId !== undefined ? { turkishNationalId } : {}),
@@ -277,11 +246,10 @@ export default class Papara {
       [method]: credential,
       amount,
     };
-    const url = `${this.BASE_URL}/masspayment/${subPath}`;
+    const url = `/masspayment/${subPath}`;
 
     try {
-      const response = await axios.post<PaparaResponse<MasspaymentData>>(url, requestBody);
-      return response.data;
+      return await this.http.post<MasspaymentData>(url, requestBody);
     } catch (err) {
       throw err;
     }
@@ -307,7 +275,7 @@ export default class Papara {
     amount: number;
     turkishNationalId?: string;
     massPaymentId?: string;
-  }) {
+  }): Promise<PaparaResponse<MasspaymentData>> {
     return this.masspayment({
       method: 'accountNumber',
       credential: accountNumber,
@@ -337,7 +305,7 @@ export default class Papara {
     amount: number;
     turkishNationalId?: string;
     massPaymentId?: string;
-  }) {
+  }): Promise<PaparaResponse<MasspaymentData>> {
     return this.masspayment({
       method: 'email',
       credential: email,
@@ -367,7 +335,7 @@ export default class Papara {
     amount: number;
     turkishNationalId?: string;
     massPaymentId?: string;
-  }) {
+  }): Promise<PaparaResponse<MasspaymentData>> {
     return this.masspayment({
       method: 'phoneNumber',
       credential: phoneNumber,
@@ -378,14 +346,13 @@ export default class Papara {
   }
 
   // This is a base method for masspaymentVerificationBy... methods
-  private async masspaymentVerification(method: 'id' | 'masspaymentId', credential: string) {
+  private async masspaymentVerification(
+    method: 'id' | 'masspaymentId',
+    credential: string,
+  ): Promise<PaparaResponse<MasspaymentVerificationData>> {
     try {
       const queryParam = `${method === 'id' ? 'id' : 'byreference'}=${credential}`;
-      const response = await axios.get<PaparaResponse<MasspaymentVerificationData>>(
-        `${this.BASE_URL}/masspayment${queryParam}`,
-      );
-
-      return response.data;
+      return await this.http.get<MasspaymentVerificationData>(`/masspayment${queryParam}`);
     } catch (err) {
       throw err;
     }
@@ -396,7 +363,7 @@ export default class Papara {
    * @param id
    * @returns
    */
-  async masspaymentVerficationById(id: string) {
+  async masspaymentVerficationById(id: string): Promise<PaparaResponse<MasspaymentVerificationData>> {
     return this.masspaymentVerification('id', id);
   }
 
@@ -405,7 +372,9 @@ export default class Papara {
    * @param masspaymentId
    * @returns
    */
-  async masspaymentVerficationByMasspaymentId(masspaymentId: string) {
+  async masspaymentVerficationByMasspaymentId(
+    masspaymentId: string,
+  ): Promise<PaparaResponse<MasspaymentVerificationData>> {
     return this.masspaymentVerification('masspaymentId', masspaymentId);
   }
 
@@ -419,7 +388,7 @@ export default class Papara {
     credential: string | number;
     amount: number;
     merchantReference?: string;
-  }) {
+  }): Promise<PaparaResponse<CashdepositData>> {
     try {
       const subPath = method === 'phoneNumber' ? '' : method;
 
@@ -428,11 +397,7 @@ export default class Papara {
         amount,
         [method]: credential,
       };
-      const response = await axios.post<PaparaResponse<CashdepositData>>(
-        `${this.BASE_URL}/cashdeposit/${subPath}`,
-        requestBody,
-      );
-      return response.data;
+      return await this.http.post<CashdepositData>(`/cashdeposit/${subPath}`, requestBody);
     } catch (err) {
       throw err;
     }
@@ -445,7 +410,11 @@ export default class Papara {
    * @param [merchantReference]
    * @returns
    */
-  async cashDepositByPhoneNumber(phoneNumber: string, amount: number, merchantReference?: string) {
+  async cashDepositByPhoneNumber(
+    phoneNumber: string,
+    amount: number,
+    merchantReference?: string,
+  ): Promise<PaparaResponse<CashdepositData>> {
     return this.cashDeposit({ method: 'phoneNumber', credential: phoneNumber, amount, merchantReference });
   }
 
@@ -456,7 +425,11 @@ export default class Papara {
    * @param [merchantReference]
    * @returns
    */
-  async cashDepositByAccountNumber(accountNumber: number, amount: number, merchantReference?: string) {
+  async cashDepositByAccountNumber(
+    accountNumber: number,
+    amount: number,
+    merchantReference?: string,
+  ): Promise<PaparaResponse<CashdepositData>> {
     return this.cashDeposit({ method: 'accountnumber', credential: accountNumber, amount, merchantReference });
   }
 
@@ -467,7 +440,11 @@ export default class Papara {
    * @param [merchantReference]
    * @returns
    */
-  async cashDepositByTCKN(tckn: string, amount: number, merchantReference?: string) {
+  async cashDepositByTCKN(
+    tckn: string,
+    amount: number,
+    merchantReference?: string,
+  ): Promise<PaparaResponse<CashdepositData>> {
     return this.cashDeposit({ method: 'tckn', credential: tckn, amount, merchantReference });
   }
 
@@ -477,13 +454,12 @@ export default class Papara {
    * @param EndDate
    * @returns
    */
-  async cashDepositSettlement(StartDate: string, EndDate: string) {
+  async cashDepositSettlement(StartDate: string, EndDate: string): Promise<PaparaResponse<SettlementData>> {
     try {
-      const response = await axios.post<PaparaResponse<SettlementData>>(`${this.BASE_URL}/cashdeposit/settlement`, {
+      return await this.http.post<SettlementData>(`/cashdeposit/settlement`, {
         StartDate,
         EndDate,
       });
-      return response.data;
     } catch (err) {
       throw err;
     }
@@ -499,7 +475,7 @@ export default class Papara {
     credential: string | number;
     amount: number;
     merchantReference?: string;
-  }) {
+  }): Promise<PaparaResponse<CashdepositProvisionData>> {
     try {
       const subPath = `provision/${method.toLowerCase()}`;
 
@@ -508,11 +484,7 @@ export default class Papara {
         amount,
         [method]: credential,
       };
-      const response = await axios.post<PaparaResponse<CashdepositProvisionData>>(
-        `${this.BASE_URL}/cashdeposit/${subPath}`,
-        requestBody,
-      );
-      return response.data;
+      return await this.http.post<CashdepositProvisionData>(`/cashdeposit/${subPath}`, requestBody);
     } catch (err) {
       throw err;
     }
@@ -525,7 +497,11 @@ export default class Papara {
    * @param [merchantReference]
    * @returns
    */
-  async cashDepositProvisionByPhoneNumber(phoneNumber: string, amount: number, merchantReference?: string) {
+  async cashDepositProvisionByPhoneNumber(
+    phoneNumber: string,
+    amount: number,
+    merchantReference?: string,
+  ): Promise<PaparaResponse<CashdepositProvisionData>> {
     return this.cashDepositProvision({
       method: 'phoneNumber',
       credential: phoneNumber,
@@ -541,7 +517,11 @@ export default class Papara {
    * @param [merchantReference]
    * @returns
    */
-  async cashDepositProvisionByAccountNumber(accountNumber: number, amount: number, merchantReference?: string) {
+  async cashDepositProvisionByAccountNumber(
+    accountNumber: number,
+    amount: number,
+    merchantReference?: string,
+  ): Promise<PaparaResponse<CashdepositProvisionData>> {
     return this.cashDepositProvision({
       method: 'accountNumber',
       credential: accountNumber,
@@ -557,7 +537,11 @@ export default class Papara {
    * @param [merchantReference]
    * @returns
    */
-  async cashDepositProvisionByTCKN(tckn: string, amount: number, merchantReference?: string) {
+  async cashDepositProvisionByTCKN(
+    tckn: string,
+    amount: number,
+    merchantReference?: string,
+  ): Promise<PaparaResponse<CashdepositProvisionData>> {
     return this.cashDepositProvision({
       method: 'tckn',
       credential: tckn,
@@ -572,14 +556,10 @@ export default class Papara {
    * @param TransactionDate
    * @returns
    */
-  async cashDepositProvisionComplete(Id: number, TransactionDate: string) {
+  async cashDepositProvisionComplete(Id: number, TransactionDate: string): Promise<PaparaResponse<CashdepositData>> {
     try {
       const requestBody = { Id, TransactionDate };
-      const response = await axios.post<PaparaResponse<CashdepositData>>(
-        `${this.BASE_URL}/cashdeposit/provision/complete`,
-        requestBody,
-      );
-      return response.data;
+      return await this.http.post<CashdepositData>(`/cashdeposit/provision/complete`, requestBody);
     } catch (err) {
       throw err;
     }
@@ -591,29 +571,25 @@ export default class Papara {
    * @param EndDate
    * @returns
    */
-  async cashDepositProvisionSettlement(StartDate: string, EndDate: string) {
+  async cashDepositProvisionSettlement(StartDate: string, EndDate: string): Promise<PaparaResponse<SettlementData>> {
     try {
-      const response = await axios.post<PaparaResponse<SettlementData>>(
-        `${this.BASE_URL}/cashdeposit/provision/settlement`,
-        {
-          StartDate,
-          EndDate,
-        },
-      );
-      return response.data;
+      return await this.http.post<SettlementData>(`/cashdeposit/provision/settlement`, {
+        StartDate,
+        EndDate,
+      });
     } catch (err) {
       throw err;
     }
   }
 
-  private async cashDepositVerification(method: 'id' | 'merchantReference', credential: string | number) {
+  private async cashDepositVerification(
+    method: 'id' | 'merchantReference',
+    credential: string | number,
+  ): Promise<PaparaResponse<CashdepositData>> {
     try {
       const url =
-        method === 'id'
-          ? `${this.BASE_URL}/cashdeposit?id=${credential}`
-          : `${this.BASE_URL}/cashdeposit/byreference?reference=${credential}`;
-      const response = await axios.get<PaparaResponse<CashdepositData>>(url);
-      return response.data;
+        method === 'id' ? `/cashdeposit?id=${credential}` : `/cashdeposit/byreference?reference=${credential}`;
+      return await this.http.get<CashdepositData>(url);
     } catch (err) {
       throw err;
     }
@@ -624,7 +600,7 @@ export default class Papara {
    * @param id
    * @returns
    */
-  async cashDepositVerificationById(id: number) {
+  async cashDepositVerificationById(id: number): Promise<PaparaResponse<CashdepositData>> {
     return this.cashDepositVerification('id', id);
   }
 
@@ -633,7 +609,9 @@ export default class Papara {
    * @param merchantReference
    * @returns
    */
-  async cashDepositVerificationByMerchantReference(merchantReference: string) {
+  async cashDepositVerificationByMerchantReference(
+    merchantReference: string,
+  ): Promise<PaparaResponse<CashdepositData>> {
     return this.cashDepositVerification('merchantReference', merchantReference);
   }
 
@@ -645,7 +623,12 @@ export default class Papara {
    * @param PageItemCount
    * @returns
    */
-  async cashDepositVerificationByDate(StartDate: string, EndDate: string, PageIndex: number, PageItemCount: number) {
+  async cashDepositVerificationByDate(
+    StartDate: string,
+    EndDate: string,
+    PageIndex: number,
+    PageItemCount: number,
+  ): Promise<PaparaResponse<CashdepositData[]>> {
     try {
       const params = {
         StartDate,
@@ -653,10 +636,7 @@ export default class Papara {
         PageIndex,
         PageItemCount,
       };
-      const response = await axios.get<PaparaResponse<CashdepositData[]>>(`${this.BASE_URL}/cashdeposit/bydate`, {
-        params,
-      });
-      return response.data;
+      return await this.http.get<CashdepositData[]>(`/cashdeposit/bydate`, { params });
     } catch (err) {
       throw err;
     }
@@ -666,10 +646,9 @@ export default class Papara {
    * Banks accounts
    * @returns
    */
-  async bankAccounts() {
+  async bankAccounts(): Promise<PaparaResponse<BankAccountsData[]>> {
     try {
-      const response = await axios.get<PaparaResponse<BankAccountsData[]>>(`${this.BASE_URL}/banking/bankaccounts`);
-      return response.data;
+      return await this.http.get<BankAccountsData[]>(`/banking/bankaccounts`);
     } catch (err) {
       throw err;
     }
@@ -680,11 +659,16 @@ export default class Papara {
    * @param { bankAccountId, amount }
    * @returns
    */
-  async bankWithdrawal({ bankAccountId, amount }: { bankAccountId: number; amount: number }) {
+  async bankWithdrawal({
+    bankAccountId,
+    amount,
+  }: {
+    bankAccountId: number;
+    amount: number;
+  }): Promise<PaparaResponse<undefined>> {
     try {
       const requestBody = { amount, bankAccountId };
-      const response = await axios.post<PaparaResponse<undefined>>(`${this.BASE_URL}/banking/withdrawal`, requestBody);
-      return response.data;
+      return await this.http.post<undefined>(`/banking/withdrawal`, requestBody);
     } catch (err) {
       throw err;
     }
