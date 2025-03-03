@@ -5,7 +5,7 @@ import { PaparaResponse } from './interfaces';
 export default class PaparaHttp {
   private get BASE_URL() {
     if (this.testEnv) {
-      return 'https://merchant.test.api.papara.com';
+      return 'https://merchant-api.test.papara.com';
     } else {
       return 'https://merchant-api.papara.com';
     }
