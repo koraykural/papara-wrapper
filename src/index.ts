@@ -32,7 +32,7 @@ export default class Papara {
    */
   async account(): Promise<PaparaResponse<AccountData>> {
     try {
-      return await this.http.get<AccountData>(`account`);
+      return await this.http.get<AccountData>(`/account`);
     } catch (err) {
       throw err;
     }
