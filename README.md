@@ -80,7 +80,7 @@ If test enviroment is enabled, all requests will be sent to `https://merchant.te
 
 Koray Kural
 
-Feel free to [mail](mailto:kural17@itu.edu.tr) me.
+Feel free to [mail](mailto:koraykural99@gmail.com) me.
 
 **This package is not officially maintained by [Papara Team](https://www.papara.com/).**
 
