@@ -1,13 +1,13 @@
 {
   "name": "papara-wrapper",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Papara API wrapper for node",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "jest --config jestconfig.json",
     "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "format": "prettier --write src/**/*.ts"
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
